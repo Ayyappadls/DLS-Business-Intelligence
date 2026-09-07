@@ -274,26 +274,24 @@ export default function BusinessMirror() {
 
   // ---- persistence ----
   useEffect(() => {
-    (async () => {
-      try {
-        const r = await window.storage.get("business-mirror-state", false);
-        if (r && r.value) {
-          const s = JSON.parse(r.value);
-          setProfile(s.profile || profile);
-          setGoals(s.goals || []);
-          setData(s.data || {});
-          setJournal(s.journal || []);
-          setSnapshots(s.snapshots || []);
-          setChat(s.chat || []);
-          setLang(s.lang || "en");
-          setStage(s.stage || "lang");
-          return;
-        }
-      } catch (e) {
-        /* no saved state */
+    try {
+      const saved = localStorage.getItem("business-mirror-state");
+      if (saved) {
+        const s = JSON.parse(saved);
+        setProfile(s.profile || profile);
+        setGoals(s.goals || []);
+        setData(s.data || {});
+        setJournal(s.journal || []);
+        setSnapshots(s.snapshots || []);
+        setChat(s.chat || []);
+        setLang(s.lang || "en");
+        setStage(s.stage || "lang");
+        return;
       }
-      setStage("lang");
-    })();
+    } catch (e) {
+      /* no saved state */
+    }
+    setStage("lang");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -303,7 +301,11 @@ export default function BusinessMirror() {
         profile, goals, data, journal, snapshots, chat, lang, stage,
         ...patch,
       };
-      window.storage.set("business-mirror-state", JSON.stringify(next), false).catch(() => {});
+      try {
+        localStorage.setItem("business-mirror-state", JSON.stringify(next));
+      } catch (e) {
+        /* persistence unavailable */
+      }
     },
     [profile, goals, data, journal, snapshots, chat, lang, stage]
   );
@@ -529,7 +531,7 @@ Return ONLY raw JSON, no markdown fences, in this exact shape:
   async function deleteAllData() {
     if (!window.confirm(tr(lang, "deleteConfirm"))) return;
     try {
-      await window.storage.delete("business-mirror-state", false);
+      localStorage.removeItem("business-mirror-state");
     } catch (e) {
       /* nothing stored yet */
     }
@@ -1118,3 +1120,4 @@ function JournalBox({ onAdd, placeholder, addLabel }) {
     </div>
   );
 }
+
